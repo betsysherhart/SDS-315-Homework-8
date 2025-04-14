@@ -150,7 +150,7 @@ library(ggplot2)
 ggplot(covid, aes(x = days_since_first_death, y = log_deaths, color = country)) +
   geom_line() +
   labs(title = "Daily COVID-19 Deaths Over Time Fit on log scale",
-       x = "Days Since First Death (23 February 2020)", y = "Deaths (log scale)")
+       x = "Days Since First Death (23 February 2020)", y = "log of Number of reported COVID-19 deaths on that day")
 ```
 
 The graph represents the daily COVID deaths the happened over time starting from February 23rd, 2020 in Italy and Spain. The graph provides a visual comparison of the rate of increasing deaths between Italy and Spain. Spain has a more steep slope than Italy indicating that Spain had a higher growth rate than Italy. This is supported by Spain's greater growth rate and shorter doubling time as calculated earlier.
