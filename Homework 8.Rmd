@@ -1,0 +1,196 @@
+---
+title: "SDS 315 Homework 8"
+author:
+- "Elizabeth 'Betsy' Sherhart"
+- "UT EID: eas5778"
+- "[Click here for link to GitHub repository](https://github.com/betsysherhart/SDS-315-Homework-8.git)"
+date: "April 14th, 2025"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#call tidyverse and mosaic libraries
+library(tidyverse)
+library(mosaic)
+library(knitr)
+```
+
+# Problem 1: regression warm up
+
+```{r, echo=FALSE, message = FALSE}
+creatinine <- read.csv("creatinine.csv")
+
+# a scatterplot that shows the trend line
+ggplot(creatinine) +
+  geom_point(aes(x=age, y=creatclear)) +
+  geom_smooth(aes(x=age, y=creatclear), method='lm') +
+  labs(title="Creatinine clearance rate change with age",
+       x = "age (years)",
+       y = "creatinine clearance rate (mL/minute)")
+
+# fit the model
+model_creatinine = lm(creatclear ~ age, data = creatinine)
+
+# summarize the trend
+coef(model_creatinine)
+
+# make a prediction
+fiftyfive_prediction = 147.8 - 0.62 * 55
+
+forty_prediction = 147.8 - 0.62 * 40
+forty_residual = 135 - forty_prediction
+
+sixty_prediction = 147.8 - 0.62 * 60
+sixty_residual = 112 - sixty_prediction
+```
+
+## A) What creatinine clearance rate should we expect for a 55-year-old?
+
+A 55-year-old is expected to have a creatinine clearance rate of `r fiftyfive_prediction` mL/minute based on the linear regression model.
+
+This was calculated using the regression equation derived from the model:
+$$
+creatinineClearanceRate = 147.8 - 0.62 * age
+$$
+expected rate of 55 year old = 147.8 - 0.62 * 55 = `r fiftyfive_prediction` mL/min
+
+## B) How does creatinine clearance rate change with age?
+
+The creatinine clearance rate change with age is represented by the slope of the regression line, which is -0.62 mL/minute per year. This means that for every additional year of age, the creatinine clearance rate will decrease on average by 0.62 mL/minute.
+
+## C) Whose creatinine clearance rate is healthier (higher) for their age: a 40-year-old with a rate of 135, or a 60-year-old with a rate of 112?
+
+A 40-year-old with a clearance rate of 135\newline
+A 60-year-old with a clearance rate of 112
+
+Using the regression equation:
+
+$$
+creatinineClearanceRate = 147.8 - 0.62 * age
+$$
+
+Calculate the expected clearance rate for each and compare the residuals (actual - expected):
+
+Calculate expected values:
+Expected for age 40:\newline
+147.8 - 0.62 × 40 = 123\newline
+Residual:\newline
+135 - 123 = 12
+
+Expected for age 60:\newline
+147.8 - 0.62 × 60 = 110.6\newline
+Residual:\newline
+112 - 110.6 = 1.4
+
+Since higher creatinine clearance rates indicate better kidney function, the 40-year-old has a healthier creatinine clearance rate for their age. Their clearance rate is 12 mL/min above the expected value, whereas the 60-year-old's clearance rate is only 1.4 mL/min above their expected value. Therefore, the 40-year-old exceeds their expected rate by a larger margin, indicating better kidney function relative to their age.
+
+# Problem 2: Modeling disease growth
+
+```{r, echo=FALSE, results = 'hide', message = FALSE}
+covid <- read.csv("covid.csv")
+
+covid$log_deaths <- log(covid$deaths)
+
+italy <- subset(covid, country == "Italy")
+spain <- subset(covid, country == "Spain")
+
+italy_model <- lm(log_deaths ~ days_since_first_death, data = italy)
+spain_model <- lm(log_deaths ~ days_since_first_death, data = spain)
+
+coef(italy_model)
+coef(spain_model)
+
+double_Italy <- 70 / 18.3 # 3.8 days
+double_Spain <- 70 / 27.6 # 2.5 days
+
+italy_model_boot <- do(10000)*lm(log_deaths ~ days_since_first_death, data = resample(italy))
+spain_model_boot <- do(10000)*lm(log_deaths ~ days_since_first_death, data = resample(spain))
+
+confint(italy_model_boot, level = 0.95)[2,]
+confint(spain_model_boot, level = 0.95)[2,]
+
+r_italy_lower <- 0.159
+r_italy_upper <- 0.208
+
+r_spain_lower <- 0.236
+r_spain_upper <- 0.317
+
+doubling_italy_lower_rate <- 70 / (r_italy_lower*100)
+doubling_italy_upper_rate <- 70 / (r_italy_upper*100)
+
+ddoubling_spain_lower_rate <- 70 / (r_spain_lower*100)
+doubling_spain_upper_rate <- 70 / (r_spain_upper*100)
+
+```
+
+## 1. Estimated growth rate and doubling time for Italy, with 95% bootstrapped confidence intervals for each
+
+Italy
+```{r, echo=FALSE}
+confint(italy_model_boot, level = 0.95)[2,]
+```
+
+By using a linear model I was able to understand how daily COVID-19 deaths increased in Italy over time. The estimated growth rate for Italy was about 0.183, indicating that the deaths increased by 18.3 % every day. The estimated doubling time was 3.8 days. The 95% bootstrapped confidence intervals for the growth rate ranged from around 0.159 to 0.208. The 95% bootstrapped confidence intervals for the doubling time ranged from around 4.4 days and 3.4 days. 
+
+## 2. Estimated growth rate and doubling time for Spain, with 95% bootstrapped confidence intervals for each
+
+Spain
+```{r, echo = FALSE}
+confint(spain_model_boot, level = 0.95)[2,]
+```
+
+By using a linear model I was able to understand how daily COVID-19 deaths increased in Spain over time. The estimated growth rate for Spain was 0.276, indicating that the deaths increased by 27.6% every day. The estimated doubling time was 2.5 days. The 95% bootstrapped confidence intervals for the growth rate ranged from around 0.235 and 0.318. The 95% bootstrapped confidence intervals for the doubling time ranged from around 3.0 days and 2.2 days. 
+
+## 3.
+
+```{r, echo = FALSE}
+library(ggplot2)
+ggplot(covid, aes(x = days_since_first_death, y = log_deaths, color = country)) +
+  geom_line() +
+  labs(title = "Daily COVID-19 Deaths Over Time Fit on log scale",
+       x = "Days Since First Death (23 February 2020)", y = "Deaths (log scale)")
+```
+
+The graph represents the daily COVID deaths the happened over time starting from February 23rd, 2020 in Italy and Spain. The graph provides a visual comparison of the rate of increasing deaths between Italy and Spain. Spain has a more steep slope than Italy indicating that Spain had a higher growth rate than Italy. This is supported by Spain's greater growth rate and shorter doubling time as calculated earlier.
+
+# Problem 3: price elastcity of demand
+
+```{r, echo = FALSE, message = FALSE}
+# Import the data
+milk <- read.csv("milk.csv")
+
+milk$log_price <- log(milk$price)
+milk$log_sales <- log(milk$sales)
+
+# A log-log transformations works wonders
+# This implies a power law relationship
+# also supported by economic theory!
+ggplot(milk) + 
+  geom_point(aes(x=log(price), y=log(sales))) + 
+  geom_smooth(aes(x=log(price), y=log(sales)), method='lm', se=TRUE) +
+  labs(title = "Price elastcity of demand for milk",
+       x = "Price of mik",
+       y = "Number of participants willing to purchase milk")
+
+boot_model <- do(10000) * lm(log_sales ~ log_price, data = resample(milk))
+
+# Get the bootstrapped 95% confidence interval for elasticity (slope)
+confint(boot_model, level = 0.95)[2,]
+
+# interpretation: demand for milk goes down by 1.6% when price goes up by 1%
+
+```
+The estimated price elasticity of demand for milk is -1.62, with a 95% bootstrapped confidence interval ranging from around -1.77 to -1.46.
+
+To estimate this value, I used a power-law model of the form:
+$$
+Q = K \cdot P^{\beta}
+$$
+By taking the logarithm of both sides, I transformed it into a linear model:
+$$
+\log(Q) = \log(K) + \beta \cdot \log(P)
+$$
+
+I fit this transformed model using linear regression of $\log(\text{sales})$ on $\log(\text{price})$ and bootstrapped the model 10,000 times to obtain a confidence interval for the elasticity estimate $\beta$. Since the slope of this regression corresponds to the price elasticity, a value of -1.62 implies that a 1% increase in price leads to a 1.62% decrease in milk sales, indicating that demand is elastic. Additionally, because the confidence interval does not include 0, the result is statistically significant and confirms that price of milk has a meaningful impact on its demand.
